@@ -43,7 +43,7 @@ class AppBloc {
 
   AppBloc() {
     _navigationController.stream.listen(onDataNavigationChangeCallback);
-    _navigationController.sink.add(NavigationOptions.ARTISTS);
+    _navigationController.sink.add(NavigationOptions.HOME);
 
   }
    void loadPlaylistData() {

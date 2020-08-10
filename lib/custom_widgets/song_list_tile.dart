@@ -1,27 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
+import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/blocs/player_bloc.dart';
 import 'package:provider/provider.dart';
 
 import '../utility.dart';
 
 class SongListTile extends StatefulWidget {
-  SongListTile({Key key, @required this.songData}) : super(key: key);
+  SongListTile({Key key, @required this.songData, @required this.option})
+      : super(key: key);
   final SongInfo songData;
+  final NavigationOptions option;
 
   @override
   _SongListTileState createState() => _SongListTileState();
 }
 
 class _SongListTileState extends State<SongListTile> {
+  
+
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
+   
+
     return InkWell(
       onTap: () {
-        playerBloc.playSong(widget.songData.filePath);
+        
+         playerBloc.playSong(widget.songData.filePath);
+
         playerBloc.setCurrentSong(widget.songData);
+
+        switch (widget.option) {
+          case NavigationOptions.SONGS:
+            break;
+          case NavigationOptions.ALBUMS:
+            break;
+          case NavigationOptions.HOME:
+            playerBloc.trackCurrentSongList();
+            break;
+          case NavigationOptions.PLAYLISTS:
+            break;
+          case NavigationOptions.ARTISTS:
+            break;
+        }
       },
       child: Container(
         height: 70,
@@ -46,6 +70,9 @@ class _SongListTileState extends State<SongListTile> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.black87)),
+                    SizedBox(
+                      height: 3,
+                    ),
                     Text(widget.songData.artist,
                         style: TextStyle(color: Colors.black38, fontSize: 10)),
                   ],

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/blocs/player_bloc.dart';
+import 'package:music_player/container_clipper.dart';
 import 'package:music_player/custom_widgets/Horizontal_list_item_widget.dart';
 import 'package:music_player/custom_widgets/album_card.dart';
 import 'package:music_player/custom_widgets/song_list_tile.dart';
@@ -35,6 +37,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   int tabIndex = 0;
   bool isPlaying = false;
+  double _slidePosition = 0;
+
+  bool shuffleSetter =
+      true; //not able to add events to shuffle stream, so using this bool to trigger it one time.
 
   static final Map<NavigationOptions, String> _titles = {
     NavigationOptions.HOME: 'H O M E',
@@ -49,14 +55,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     final bloc = Provider.of<AppBloc>(context, listen: false);
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
+
+    playerBloc.setShuffle(false);
+
     _currentNavigationOpetion = NavigationOptions.HOME;
     bloc.changeNavigation(NavigationOptions.HOME);
     _currentSearchBarState = SearchBarState.COLLAPSED;
     _searchController = TextEditingController();
 
     controller =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    animation = CurvedAnimation(curve: Curves.easeInOut, parent: controller);
+        AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    animation =
+        CurvedAnimation(curve: Curves.fastOutSlowIn, parent: controller);
 
     playPauseController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 210));
@@ -66,6 +76,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       else
         playerBloc.setplayerStatus(true);
     });
+
+    //playpause animation control using isplaying stream
+    playerBloc.isPlaying.listen((event) {
+      if (event)
+        playPauseController.reverse();
+      else
+        playPauseController.forward();
+    });
+    //move to next song once finished
+    playerBloc.isShuffle.listen(
+      (isShuffle) {
+        playerBloc.currentSongInfo.listen((totalDuration) {
+          if (totalDuration.audio.duration.inSeconds != 0) {
+            playerBloc.currentDuration.listen((currentDuration) {
+              if (isShuffle) {
+                if (currentDuration.inSeconds >
+                    totalDuration.audio.duration.inSeconds - 0.2) {
+                  playerBloc.shufflePlaylist();
+                  Future.delayed(Duration(milliseconds: 200));
+                }
+              } else {
+                if (currentDuration.inSeconds >
+                    totalDuration.audio.duration.inSeconds - 0.2) {
+                  playerBloc.next();
+                  Future.delayed(Duration(milliseconds: 200));
+                }
+              }
+
+              //delay added so that it doesn't throw playerBloc.next more than once.:)
+            });
+          }
+        });
+      },
+    );
   }
 
   //gesture controls
@@ -105,14 +149,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     controller.forward();
   }
 
-  //playpause animation toggle
-  void playPauseToggle() {
-    if (playPauseController.status == AnimationStatus.dismissed) {
-      playPauseController.forward();
-    } else if (playPauseController.status == AnimationStatus.completed)
-      playPauseController.reverse();
-  }
-
   @override
   Widget build(BuildContext context) {
     final bloc = Provider.of<AppBloc>(context, listen: false);
@@ -121,7 +157,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _buildHomeScreen(bloc),
       AnimatedBuilder(
           animation: controller,
-          builder: (context, child) => _buildPlayerInfo()),
+          builder: (context, child) => _buildPlayerBackground()),
+      AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) => _buildAlbumArtScreen(),
+      ),
       AnimatedBuilder(
         animation: controller,
         builder: (context, child) => _buildPlayer(),
@@ -129,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ]);
   }
 
-  Widget _buildPlayerInfo() {
+  Widget _buildAlbumArtScreen() {
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
     final size = MediaQuery.of(context).size;
     return StreamBuilder<bool>(
@@ -138,12 +178,122 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         builder: (context, snapshot) {
           return Transform.translate(
             offset: snapshot.data ? Offset(0, 0) : Offset(0, size.height),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                  sigmaX: animation.value * 5, sigmaY: animation.value * 5),
+            child: SafeArea(
+                child: Material(
+              color: Colors.transparent,
               child: Opacity(
-                opacity: animation.value * 0.4,
-                child: Container(color: Colors.white),
+                opacity: controller.value,
+                child: Column(
+                  children: [
+                    SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.arrow_back,
+                            color: Colors.black87,
+                          ),
+                          onPressed: () => controller.reverse(),
+                        ),
+                        Text(
+                          'N O W   P L A Y I N G',
+                          style: TextStyle(
+                              color: Colors.black54,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.more_vert, color: Colors.black87),
+                          onPressed: null,
+                        )
+                      ],
+                    ),
+                    SizedBox(height: 70),
+                    StreamBuilder<SongInfo>(
+                        stream: playerBloc.currentSongPlaying,
+                        builder: (context, snapshot) {
+                          return Card(
+                            elevation: 15,
+                            color: Colors.transparent,
+                            child: Container(
+                              width: size.width / 2,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(20),
+                                ),
+                                child: Image(
+                                  image: (snapshot.data.albumArtwork == null)
+                                      ? AssetImage("assets/no_cover.png")
+                                      : FileImage(
+                                          File(snapshot.data.albumArtwork),
+                                        ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                    StreamBuilder<SongInfo>(
+                        stream: playerBloc.currentSongPlaying,
+                        builder: (context, snapshot) {
+                          final currentSong = snapshot.data;
+                          if (currentSong != null)
+                            return Column(
+                              children: [
+                                SizedBox(
+                                  height: 15,
+                                ),
+                                Text(currentSong.title,
+                                    style: TextStyle(
+                                        fontSize: 22, color: Colors.black87)),
+                                SizedBox(
+                                  height: 15,
+                                ),
+                                Text(currentSong.artist,
+                                    style: TextStyle(
+                                        fontSize: 14, color: Colors.black38))
+                              ],
+                            );
+                          return Container();
+                        })
+                  ],
+                ),
+              ),
+            )),
+          );
+        });
+  }
+
+  Widget _buildPlayerBackground() {
+    final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
+    final size = MediaQuery.of(context).size;
+    return StreamBuilder<bool>(
+        stream: playerBloc.isPlayerOpen,
+        initialData: false,
+        builder: (context, snapshot) {
+          return Transform.translate(
+            offset: snapshot.data ? Offset(0, 0) : Offset(0, size.height),
+            child: Opacity(
+              opacity: animation.value * 0.96,
+              child: Container(
+                height: size.height * 0.65,
+                width: size.width,
+                color: Colors.white,
+                child: Stack(
+                  children: [
+                    Container(
+                        width: size.width / 2,
+                        height: size.height * 0.7 / 2,
+                        color: Colors.black12),
+                    Positioned(
+                        top: size.height * 0.7 / 2,
+                        left: size.width / 2,
+                        child: Container(
+                            width: size.width / 2,
+                            height: size.height / 2,
+                            color: Colors.black12))
+                  ],
+                ),
               ),
             ),
           );
@@ -151,7 +301,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPlayer() {
-    
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
     final size = MediaQuery.of(context).size;
     return StreamBuilder<bool>(
@@ -187,62 +336,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               return Stack(
                                 children: <Widget>[
                                   //mini player
-                                  Opacity(
-                                    opacity: 1 - controller.value,
-                                    child: controller.value < 1
-                                        ? Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 32, vertical: 8),
-                                            child: Container(
-                                              child: Row(
-                                                children: <Widget>[
-                                                  CircleAvatar(
-                                                    radius: 20,
-                                                    backgroundImage: (currentSongPlaying
-                                                                .albumArtwork ==
-                                                            null)
-                                                        ? AssetImage(
-                                                            'assets/no_cover.png')
-                                                        : FileImage(
-                                                            File(currentSongPlaying
-                                                                .albumArtwork),
-                                                          ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 25,
-                                                  ),
-                                                  Container(
-                                                    width: 260,
-                                                    child: Text(
-                                                        currentSongPlaying
-                                                            .title),
-                                                    // Text(currentSongPlaying.artist,style:TextStyle(color: Colors.black38,fontSize: 12))
-                                                  ),
-                                                  IconButton(
-                                                      onPressed: () {
-                                                        playPauseToggle();
-                                                        playerBloc
-                                                            .playPauseSong();
-                                                      },
-                                                      icon: AnimatedIcon(
-                                                        icon: AnimatedIcons
-                                                            .pause_play,
-                                                        progress:
-                                                            playPauseController,
-                                                      ))
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        : Container(),
-                                  ),
+                                  _buildMiniPlayer(
+                                      currentSongPlaying, playerBloc),
+
                                   //large player
-                                  Opacity(
-                                    opacity: controller.value,
-                                    child: Container(
-                                      child: Text('large player'),
-                                    ),
-                                  )
+                                  _buildLargePlayer(size, playerBloc)
                                 ],
                               );
                             })),
@@ -250,6 +348,229 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ));
         });
+  }
+
+  Opacity _buildLargePlayer(Size size, PlayerBloc playerBloc) {
+    return Opacity(
+      opacity: controller.value,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 42),
+        child: Container(
+            child: Column(
+          children: <Widget>[
+            SizedBox(
+              height: 15,
+            ),
+            StreamBuilder<Duration>(
+                stream: playerBloc.currentDuration,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData)
+                    return Row(
+                      children: [
+                        SizedBox(width: size.width * 0.06),
+                        Text(
+                          '${snapshot.data.inMinutes.toString()}:${(snapshot.data.inSeconds % 60).toString()}',
+                        ),
+                        SizedBox(width: size.width * 0.62),
+                        StreamBuilder<Playing>(
+                            stream: playerBloc.currentSongInfo,
+                            builder: (context, snapshot) {
+                              if (snapshot.data != null)
+                                return Text(
+                                    '${snapshot.data.audio.duration.inMinutes.toString()}:${((snapshot.data.audio.duration.inSeconds) % 60).toString()}');
+
+                              return Container();
+                            }),
+                      ],
+                    );
+                  return Container();
+                }),
+            //  SizedBox(height: 15),
+            StreamBuilder<Playing>(
+                stream: playerBloc.currentSongInfo,
+                builder: (context, snapshot) {
+                  final currentSongInfo = snapshot.data;
+
+                  if (snapshot.hasData)
+                    return StreamBuilder<Duration>(
+                        stream: playerBloc.currentDuration,
+                        builder: (context, snapshot) {
+                          if (snapshot.data != null) {
+                            //slider
+                            return Slider(
+                                activeColor: Colors.orange,
+                                value: double.parse(
+                                    snapshot.data.inSeconds.toString()),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _slidePosition = value;
+                                  });
+
+                                  playerBloc.seekTo(Duration(
+                                      seconds: _slidePosition.toInt()));
+                                },
+                                min: 0,
+                                max: double.parse(currentSongInfo
+                                    .audio.duration.inSeconds
+                                    .toString()));
+                          } else
+                            return Container();
+                        });
+                  return Container();
+                }),
+            Container(
+              height: 150,
+              width: size.width,
+              child: Transform.scale(
+                scale: 1.15,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: size.width * 0.23,
+                      top: 80,
+                      child: Row(
+                        children: [
+                          ClipPath(
+                            clipper: BackgroundClipper(isPrevious: true),
+                            child: InkWell(
+                              onTap: playerBloc.previous,
+                              child: Container(
+                                  width: 80,
+                                  height: 50,
+                                  color: Colors.orangeAccent,
+                                  child: Row(
+                                    children: [
+                                      SizedBox(width: 20),
+                                      Icon(Icons.skip_previous),
+                                      
+                                    ],
+                                  )),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
+                          ClipPath(
+                            clipper: BackgroundClipper(isPrevious: false),
+                            child: InkWell(
+                              onTap: playerBloc.next,
+                              child: Container(
+                                width: 80,
+                                height: 50,
+                                color: Colors.greenAccent,
+                                child: Row(
+                                  children: [SizedBox(width: 35,),
+                                    Icon(Icons.skip_next),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      left: 54 + size.width * 0.23,
+                      top: 47,
+                      child: FloatingActionButton(
+                        elevation: 10,
+                        onPressed: () {
+                          playerBloc.playPauseSong();
+                        },
+                        child: AnimatedIcon(
+                          icon: AnimatedIcons.pause_play,
+                          progress: playPauseController,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                        top: 83,
+                        left: size.width * 0.08,
+                        child: StreamBuilder<bool>(
+                            stream: playerBloc.isShuffle,
+                            initialData: false,
+                            builder: (context, snapshot) {
+                              bool isShuffle = snapshot.data;
+                              if (shuffleSetter) {
+                                playerBloc.setShuffle(false);
+                                shuffleSetter = false;
+                              }
+                              return IconButton(
+                                icon: Icon(
+                                  Icons.shuffle,
+                                  color: isShuffle
+                                      ? Colors.greenAccent
+                                      : Colors.black87,
+                                ),
+                                onPressed: () =>
+                                    playerBloc.setShuffle(!isShuffle),
+                              );
+                            })),
+                    Positioned(
+                        top: 83,
+                        left: size.width * 0.64,
+                        child: StreamBuilder<bool>(
+                            stream: playerBloc.isLoop,
+                            initialData: false,
+                            builder: (context, snapshot) {
+                              bool isLoop = snapshot.data;
+                              return IconButton(
+                                icon: Icon(Icons.repeat,
+                                    color: isLoop
+                                        ? Colors.greenAccent
+                                        : Colors.black87),
+                                onPressed: () => playerBloc.setLoop(!isLoop),
+                              );
+                            }))
+                  ],
+                ),
+              ),
+            )
+          ],
+        )),
+      ),
+    );
+  }
+
+  Opacity _buildMiniPlayer(SongInfo currentSongPlaying, PlayerBloc playerBloc) {
+    return Opacity(
+      opacity: 1 - controller.value,
+      child: controller.value < 1
+          ? Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+              child: Container(
+                child: Row(
+                  children: <Widget>[
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundImage: (currentSongPlaying.albumArtwork == null)
+                          ? AssetImage('assets/no_cover.png')
+                          : FileImage(
+                              File(currentSongPlaying.albumArtwork),
+                            ),
+                    ),
+                    SizedBox(
+                      width: 25,
+                    ),
+                    Container(
+                      width: 260,
+                      child: Text(currentSongPlaying.title),
+                      // Text(currentSongPlaying.artist,style:TextStyle(color: Colors.black38,fontSize: 12))
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          playerBloc.playPauseSong();
+                        },
+                        icon: AnimatedIcon(
+                          icon: AnimatedIcons.pause_play,
+                          progress: playPauseController,
+                        ))
+                  ],
+                ),
+              ),
+            )
+          : Container(),
+    );
   }
 
   DefaultTabController _buildHomeScreen(AppBloc bloc) {
@@ -462,9 +783,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: StreamBuilder<List<SongInfo>>(
           stream: bloc.songStream,
           builder: (context, snapshot) {
+            final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
+            playerBloc.songs = snapshot.data;
             return VerticalListItemBuilder<SongInfo>(
               snapshot: snapshot,
-              itemBuilder: (context, song) => SongListTile(songData: song),
+              itemBuilder: (context, song) => SongListTile(
+                songData: song,
+                option: NavigationOptions.HOME,
+              ),
             );
           }),
     );

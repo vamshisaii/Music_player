@@ -29,9 +29,8 @@ class _SongListTileState extends State<SongListTile> {
     return InkWell(
       onTap: () {
         
-         playerBloc.playSong(widget.songData.filePath);
+         playerBloc.playSong(widget.songData.filePath,widget.songData);
 
-        playerBloc.setCurrentSong(widget.songData);
 
         switch (widget.option) {
           case NavigationOptions.SONGS:

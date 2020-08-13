@@ -16,31 +16,22 @@ import 'package:provider/provider.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key key}) : super(key: key);
 
-  static Widget show(BuildContext context) {
-    return Provider<PlayerBloc>(
-        create: (context) => PlayerBloc(), child: HomeScreen());
-  }
-
   @override
   _HomeScreenState createState() => _HomeScreenState();
+
+ 
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  NavigationOptions _currentNavigationOpetion;
-  SearchBarState _currentSearchBarState;
-  TextEditingController _searchController;
-
-  AnimationController controller;
-  AnimationController playPauseController;
   Animation animation;
-  bool _canBeDragged;
-
-  int tabIndex = 0;
+  AnimationController controller;
   bool isPlaying = false;
-  double _slidePosition = 0;
-
+  AnimationController playPauseController;
+  bool loopSetter = true;
   bool shuffleSetter =
       true; //not able to add events to shuffle stream, so using this bool to trigger it one time.
+
+  int tabIndex = 0;
 
   static final Map<NavigationOptions, String> _titles = {
     NavigationOptions.HOME: 'H O M E',
@@ -49,6 +40,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     NavigationOptions.SONGS: "S O N G S",
     NavigationOptions.PLAYLISTS: "P L A Y L I S T S",
   };
+
+  bool _canBeDragged;
+  NavigationOptions _currentNavigationOpetion;
+  SearchBarState _currentSearchBarState;
+  TextEditingController _searchController;
+  double _slidePosition = 0;
 
   @override
   void initState() {
@@ -84,32 +81,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       else
         playPauseController.forward();
     });
-    //move to next song once finished
-    playerBloc.isShuffle.listen(
-      (isShuffle) {
-        playerBloc.currentSongInfo.listen((totalDuration) {
-          if (totalDuration.audio.duration.inSeconds != 0) {
-            playerBloc.currentDuration.listen((currentDuration) {
-              if (isShuffle) {
-                if (currentDuration.inSeconds >
-                    totalDuration.audio.duration.inSeconds - 0.2) {
-                  playerBloc.shufflePlaylist();
-                  Future.delayed(Duration(milliseconds: 200));
-                }
-              } else {
-                if (currentDuration.inSeconds >
-                    totalDuration.audio.duration.inSeconds - 0.2) {
-                  playerBloc.next();
-                  Future.delayed(Duration(milliseconds: 200));
-                }
-              }
 
-              //delay added so that it doesn't throw playerBloc.next more than once.:)
-            });
-          }
-        });
-      },
-    );
+    playerBloc.controlPlaylist();
   }
 
   //gesture controls
@@ -147,26 +120,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void togglePlayNew() {
     controller.forward();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = Provider.of<AppBloc>(context, listen: false);
-
-    return Stack(children: <Widget>[
-      _buildHomeScreen(bloc),
-      AnimatedBuilder(
-          animation: controller,
-          builder: (context, child) => _buildPlayerBackground()),
-      AnimatedBuilder(
-        animation: controller,
-        builder: (context, child) => _buildAlbumArtScreen(),
-      ),
-      AnimatedBuilder(
-        animation: controller,
-        builder: (context, child) => _buildPlayer(),
-      ),
-    ]);
   }
 
   Widget _buildAlbumArtScreen() {
@@ -213,25 +166,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     StreamBuilder<SongInfo>(
                         stream: playerBloc.currentSongPlaying,
                         builder: (context, snapshot) {
-                          return Card(
-                            elevation: 15,
-                            color: Colors.transparent,
-                            child: Container(
-                              width: size.width / 2,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(20),
-                                ),
-                                child: Image(
-                                  image: (snapshot.data.albumArtwork == null)
-                                      ? AssetImage("assets/no_cover.png")
-                                      : FileImage(
-                                          File(snapshot.data.albumArtwork),
-                                        ),
+                          if (snapshot.hasData)
+                            return Card(
+                              elevation: 15,
+                              color: Colors.transparent,
+                              child: Container(
+                                width: size.width / 2,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(20),
+                                  ),
+                                  child: Image(
+                                    image: (snapshot.data.albumArtwork == null)
+                                        ? AssetImage("assets/no_cover.png")
+                                        : FileImage(
+                                            File(snapshot.data.albumArtwork),
+                                          ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
+                            );
+                          else
+                            return Container();
                         }),
                     StreamBuilder<SongInfo>(
                         stream: playerBloc.currentSongPlaying,
@@ -333,16 +289,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             stream: playerBloc.currentSongPlaying,
                             builder: (context, snapshot) {
                               final currentSongPlaying = snapshot.data;
-                              return Stack(
-                                children: <Widget>[
-                                  //mini player
-                                  _buildMiniPlayer(
-                                      currentSongPlaying, playerBloc),
+                              if (snapshot.hasData)
+                                return Stack(
+                                  children: <Widget>[
+                                    //mini player
+                                    _buildMiniPlayer(
+                                        currentSongPlaying, playerBloc),
 
-                                  //large player
-                                  _buildLargePlayer(size, playerBloc)
-                                ],
-                              );
+                                    //large player
+                                    _buildLargePlayer(size, playerBloc)
+                                  ],
+                                );
+                              else
+                                return Container();
                             })),
                   ),
                 ),
@@ -442,7 +401,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     children: [
                                       SizedBox(width: 20),
                                       Icon(Icons.skip_previous),
-                                      
                                     ],
                                   )),
                             ),
@@ -459,7 +417,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                 height: 50,
                                 color: Colors.greenAccent,
                                 child: Row(
-                                  children: [SizedBox(width: 35,),
+                                  children: [
+                                    SizedBox(
+                                      width: 35,
+                                    ),
                                     Icon(Icons.skip_next),
                                   ],
                                 ),
@@ -514,6 +475,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             initialData: false,
                             builder: (context, snapshot) {
                               bool isLoop = snapshot.data;
+                              if (loopSetter) {
+                                playerBloc.setLoop(false);
+                                loopSetter = false;
+                              }
                               return IconButton(
                                 icon: Icon(Icons.repeat,
                                     color: isLoop
@@ -794,6 +759,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             );
           }),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = Provider.of<AppBloc>(context, listen: false);
+
+    return Stack(children: <Widget>[
+      _buildHomeScreen(bloc),
+      AnimatedBuilder(
+          animation: controller,
+          builder: (context, child) => _buildPlayerBackground()),
+      AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) => _buildAlbumArtScreen(),
+      ),
+      AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) => _buildPlayer(),
+      ),
+    ]);
   }
 }
 

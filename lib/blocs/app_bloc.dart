@@ -6,46 +6,54 @@ enum NavigationOptions { HOME, ARTISTS, ALBUMS, SONGS, PLAYLISTS }
 enum SearchBarState { COLLAPSED, EXPANDED }
 
 class AppBloc {
-  final FlutterAudioQuery audioQuery = FlutterAudioQuery();
-   ArtistSortType _artistSortTypeSelected = ArtistSortType.DEFAULT;
-  AlbumSortType _albumSortTypeSelected = AlbumSortType.DEFAULT;
-  SongSortType _songSortTypeSelected = SongSortType.DEFAULT;
-  PlaylistSortType _playlistSortTypeSelected = PlaylistSortType.DEFAULT;
-
-//navigation stream controller
-
-  final StreamController<NavigationOptions> _navigationController =
-      StreamController.broadcast();
-  Stream<NavigationOptions> get currentNavigationOption =>
-      _navigationController.stream;
-
-// data query streams
-
-  final StreamController<List<ArtistInfo>> _artistController =
-      StreamController.broadcast();
-  Stream<List<ArtistInfo>> get artistStream => _artistController.stream;
-
-  final StreamController<List<AlbumInfo>> _albumController =
-      StreamController.broadcast();
-  Stream<List<AlbumInfo>> get albumStream => _albumController.stream;
-
-  final StreamController<List<SongInfo>> _songController =
-      StreamController.broadcast();
-  Stream<List<SongInfo>> get songStream => _songController.stream;
-
-  final StreamController<List<PlaylistInfo>> _playlistController =
-      StreamController.broadcast();
-  Stream<List<PlaylistInfo>> get playlistStream => _playlistController.stream;
-
-  final StreamController<SearchBarState> _searchBarController =
-      StreamController.broadcast();
-  Stream<SearchBarState> get searchBarStream => _searchBarController.stream;
-
   AppBloc() {
     _navigationController.stream.listen(onDataNavigationChangeCallback);
     _navigationController.sink.add(NavigationOptions.HOME);
 
   }
+
+  final FlutterAudioQuery audioQuery = FlutterAudioQuery();
+
+  final StreamController<List<AlbumInfo>> _albumController =
+      StreamController.broadcast();
+
+  AlbumSortType _albumSortTypeSelected = AlbumSortType.DEFAULT;
+// data query streams
+
+  final StreamController<List<ArtistInfo>> _artistController =
+      StreamController.broadcast();
+
+   ArtistSortType _artistSortTypeSelected = ArtistSortType.DEFAULT;
+//navigation stream controller
+
+  final StreamController<NavigationOptions> _navigationController =
+      StreamController.broadcast();
+
+  final StreamController<List<PlaylistInfo>> _playlistController =
+      StreamController.broadcast();
+
+  PlaylistSortType _playlistSortTypeSelected = PlaylistSortType.DEFAULT;
+  final StreamController<SearchBarState> _searchBarController =
+      StreamController.broadcast();
+
+  final StreamController<List<SongInfo>> _songController =
+      StreamController.broadcast();
+
+  SongSortType _songSortTypeSelected = SongSortType.DEFAULT;
+
+  Stream<NavigationOptions> get currentNavigationOption =>
+      _navigationController.stream;
+
+  Stream<List<ArtistInfo>> get artistStream => _artistController.stream;
+
+  Stream<List<AlbumInfo>> get albumStream => _albumController.stream;
+
+  Stream<List<SongInfo>> get songStream => _songController.stream;
+
+  Stream<List<PlaylistInfo>> get playlistStream => _playlistController.stream;
+
+  Stream<SearchBarState> get searchBarStream => _searchBarController.stream;
+
    void loadPlaylistData() {
     audioQuery.getPlaylists().then((playlist) {
       _playlistController.sink.add(playlist);
@@ -111,8 +119,6 @@ class AppBloc {
           .catchError((error) => _songController.sink.addError(error));
   }
 
-  
-
   onDataNavigationChangeCallback(final NavigationOptions option) {
     switch (option) {
       case NavigationOptions.ARTISTS:
@@ -166,7 +172,6 @@ class AppBloc {
    void changeSearchBarState(final SearchBarState newState) =>
       _searchBarController.sink.add(newState);
 
-  
   void dispose() {
     _navigationController?.close();
     _artistController?.close();

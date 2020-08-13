@@ -8,52 +8,117 @@ class PlayerBloc {
   AssetsAudioPlayer assetsAudioPlayer = AssetsAudioPlayer();
   int index = 0;
   List<SongInfo> songs;
+  SongInfo currentSong;
 
   final StreamController<SongInfo> _currentSong =
       StreamController<SongInfo>.broadcast();
 
-  final StreamController<bool> _loop=StreamController<bool>.broadcast();
+  final StreamController<bool> _loop = StreamController<bool>.broadcast();
   final StreamController<bool> _playerOpen = StreamController<bool>.broadcast();
-  final StreamController<bool> _shuffle=StreamController<bool>.broadcast();
+  final StreamController<bool> _shuffle = StreamController<bool>.broadcast();
 
   Stream<bool> get isPlaying => assetsAudioPlayer.isPlaying;
 
   //current song info from assets audio player, flutter audio query not working properly
   Stream<Playing> get currentSongInfo => assetsAudioPlayer.current;
+  Stream<Playing> get currentSongInfo2 => assetsAudioPlayer.current;
 
   Stream<bool> get isPlayerOpen => _playerOpen.stream;
 
   Stream<SongInfo> get currentSongPlaying => _currentSong.stream;
 
-  Stream<bool> get isShuffle=>_shuffle.stream;
+  Stream<bool> get isShuffle => _shuffle.stream;
 
-  Stream<bool> get isLoop=> _loop.stream;
+  Stream<bool> get isLoop => _loop.stream;
 
   Stream<Duration> get currentDuration => assetsAudioPlayer.currentPosition;
 
-Stream<bool> get songFinished=> assetsAudioPlayer.playlistFinished;
+  Stream<bool> get songFinished => assetsAudioPlayer.playlistFinished;
 
-  void playSong(String path) {
+  void controlPlaylist() async {
+    String totalDuration;
+    bool shuffle;
+    bool loop;
+    //move to next song once finished
+    currentSongPlaying.listen((event) {
+      currentSong = event;
+      totalDuration = currentSong.duration;
+    });
+
+    isShuffle.listen((event) {
+      shuffle = event;
+    });
+
+    isLoop.listen((event) {
+      loop = event;
+    });
+
+    currentDuration.listen((currentDuration) {
+      if (totalDuration != null) {
+        if (loop) {
+          assetsAudioPlayer.setLoopMode(LoopMode.single);
+        } else {
+          if (shuffle) {
+            if (currentDuration.inSeconds >
+                (int.parse(totalDuration) ~/ 1000) - 0.1) {
+              shufflePlaylist();
+              Future.delayed(Duration(milliseconds: 100));
+            }
+          } else {
+            assetsAudioPlayer.setLoopMode(LoopMode.none);
+            if (currentDuration.inSeconds >
+                int.parse(totalDuration) ~/ 1000 - 0.1) {
+              next();
+              Future.delayed(Duration(milliseconds: 100));
+            }
+          }
+        }
+        /*if (await isShuffle.first) {
+                print('shuffle is true and waitin ');
+                if (currentDuration.inSeconds >
+                    (int.parse(totalDuration.duration) ~/ 1000) - 1) {
+                  shufflePlaylist();
+                  Future.delayed(Duration(milliseconds: 200));
+                }
+              } else {
+                print('shuffle is false and waitin');
+                if (currentDuration.inSeconds >
+                    int.parse(totalDuration.duration) ~/ 1000 - 1) {
+                  print('next');
+                  next();
+                  Future.delayed(Duration(milliseconds: 200));
+                }*/
+      }
+    });
+    //delay added so that it doesn't throw playerBloc.next more than once.:)
+  }
+
+  void playSong(String path, SongInfo song) {
     if (assetsAudioPlayer.isPlaying.value) {
       assetsAudioPlayer.stop();
 
-      assetsAudioPlayer.open(Audio.file(path), showNotification: true,);
-    } else
+      assetsAudioPlayer.open(
+        Audio.file(path),
+        showNotification: true,
+      );
+      setCurrentSong(song);
+    } else {
       assetsAudioPlayer.open(Audio.file(path), showNotification: true);
+      setCurrentSong(song);
+    }
   }
 
   void setplayerStatus(bool playerstatus) {
     _playerOpen.add(playerstatus);
   }
 
-  void setShuffle(bool isShuffle){
+  void setShuffle(bool isShuffle) {
     _shuffle.sink.add(isShuffle);
-    
-    
-    
   }
 
   void setCurrentSong(SongInfo song) {
+    currentSong = song;
+
     _currentSong.add(song);
   }
 
@@ -67,59 +132,49 @@ Stream<bool> get songFinished=> assetsAudioPlayer.playlistFinished;
 
   void trackCurrentSongList() {
     List<String> songsPath = songs.map((e) => e.filePath).toList();
-    currentSongInfo.listen((event) {
-      index = songsPath.indexWhere(
-          (element) => element.startsWith('${event.audio.assetAudioPath}'));
-     
+    currentSongPlaying.listen((event) {
+      index = songsPath
+          .indexWhere((element) => element.startsWith('${event.filePath}'));
     });
   }
 
   void next() {
-    
     List<String> songsPath = songs.map((e) => e.filePath).toList();
-
+    setCurrentSong(songs[index + 1]);
     assetsAudioPlayer.stop();
     assetsAudioPlayer.open(Audio.file(songsPath[index + 1]),
         showNotification: true);
-    setCurrentSong(songs[index + 1]);
-    
   }
 
   void previous() {
     List<String> songsPath = songs.map((e) => e.filePath).toList();
-
+    setCurrentSong(songs[index - 1]);
     assetsAudioPlayer.stop();
     assetsAudioPlayer.open(Audio.file(songsPath[index - 1]),
         showNotification: true);
-    setCurrentSong(songs[index + 1]);
-    
   }
 
-  void shufflePlaylist(){
-List<String> songsPath = songs.map((e) => e.filePath).toList();
-    Random random=Random();
-    int randomIndex=random.nextInt(songsPath.length);
-
+  void shufflePlaylist() {
+    List<String> songsPath = songs.map((e) => e.filePath).toList();
+    Random random = Random();
+    int randomIndex = random.nextInt(songsPath.length);
+    setCurrentSong(songs[randomIndex]);
     assetsAudioPlayer.stop();
     assetsAudioPlayer.open(Audio.file(songsPath[randomIndex]),
         showNotification: true);
-    setCurrentSong(songs[randomIndex]);
   }
 
-  void setLoop(bool loop){
+  void setLoop(bool loop) {
     _loop.add(loop);
-    assetsAudioPlayer.toggleLoop();
   }
 
-   void dispose() {
+  void dispose() {
     _playerOpen.close();
     _currentSong.close();
     _shuffle.close();
     _loop.close();
   }
 }
-
-
 
 //  List<Audio> audios;
 

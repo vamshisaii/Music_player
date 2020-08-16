@@ -20,7 +20,7 @@ class VerticalListItemBuilder<T> extends StatelessWidget {
         return _buildList(items, context);
       } else {
         return Container(
-          child: Text('no albums'),
+          child: Text('no data'),
         );
       }
     } else if (snapshot.hasError)
@@ -45,6 +45,7 @@ class VerticalListItemBuilder<T> extends StatelessWidget {
        /* if (index == 0 || index == items.length + 1) {
           return Container();
         }*/
+       // if(index==items.length)return Container();
         return itemBuilder(context, items[index ]);
       },
     );

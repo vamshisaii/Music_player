@@ -2,24 +2,24 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/blocs/player_bloc.dart';
 import 'package:music_player/container_clipper.dart';
-import 'package:music_player/custom_widgets/Horizontal_list_item_widget.dart';
-import 'package:music_player/custom_widgets/album_card.dart';
-import 'package:music_player/custom_widgets/song_list_tile.dart';
-import 'package:music_player/custom_widgets/vertical_list_item_widget.dart';
+
+import 'package:music_player/screens/home.dart';
+import 'package:music_player/screens/songs_screen.dart';
 import 'package:provider/provider.dart';
+
+import 'Artist_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key key}) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
-
- 
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
@@ -49,14 +49,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void initState() {
+   
     super.initState();
-    final bloc = Provider.of<AppBloc>(context, listen: false);
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
 
-    playerBloc.setShuffle(false);
 
     _currentNavigationOpetion = NavigationOptions.HOME;
-    bloc.changeNavigation(NavigationOptions.HOME);
     _currentSearchBarState = SearchBarState.COLLAPSED;
     _searchController = TextEditingController();
 
@@ -81,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       else
         playPauseController.forward();
     });
-
+    //controlling next,previous,shuffle,loop
     playerBloc.controlPlaylist();
   }
 
@@ -544,6 +542,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: Scaffold(
           body: NestedScrollView(
             headerSliverBuilder: (context, value) {
+              DefaultTabController.of(context).addListener(() {
+                int index;
+                index = DefaultTabController.of(context).index;
+                print(index);
+                setState(() {
+                  bloc.changeNavigation((NavigationOptions.values[index]));
+                  switch (index) {
+                    case 0:
+                      tabIndex = 0;
+
+                      break;
+                    case 1:
+                      tabIndex = 1;
+                      break;
+                    case 2:
+                      tabIndex = 2;
+                      break;
+                    case 3:
+                      tabIndex = 3;
+                      break;
+                    case 4:
+                      tabIndex = 4;
+                      break;
+                  }
+                });
+              });
               return [
                 SliverAppBar(
                   elevation: 8,
@@ -703,62 +727,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
             body: TabBarView(
               children: <Widget>[
-                Container(
-                    child: Column(
-                  children: <Widget>[
-                    _buildHorizontalAlbums(bloc),
-                    Row(
-                      children: <Widget>[
-                        SizedBox(width: 30),
-                        Text(
-                          'R E C E N T',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                    _buildVerticalRecentSongs(bloc),
-                  ],
-                )),
-                Container(child: Center(child: Text("artists"))),
-                Container(child: Center(child: Text("songs"))),
-                Container(child: Center(child: Text("albums"))),
+                Home(bloc: bloc),
+                Artist(bloc: bloc,isArtistScreen: true,),
+                SongsScreen(bloc:bloc),
+                Artist(bloc: bloc,isArtistScreen: false,),
                 Container(child: Center(child: Text("playlists"))),
               ],
             ),
           ),
         ));
-  }
-
-  Widget _buildHorizontalAlbums(AppBloc bloc) {
-    return StreamBuilder<List<AlbumInfo>>(
-      stream: bloc.albumStream,
-      builder: (context, snapshot) {
-        return HorizontalListItemsBuilder<AlbumInfo>(
-          snapshot: snapshot,
-          itemBuilder: (context, album) => AlbumCard(albumData: album),
-        );
-      },
-    );
-  }
-
-  Widget _buildVerticalRecentSongs(AppBloc bloc) {
-    return Expanded(
-      child: StreamBuilder<List<SongInfo>>(
-          stream: bloc.songStream,
-          builder: (context, snapshot) {
-            final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-            playerBloc.songs = snapshot.data;
-            return VerticalListItemBuilder<SongInfo>(
-              snapshot: snapshot,
-              itemBuilder: (context, song) => SongListTile(
-                songData: song,
-                option: NavigationOptions.HOME,
-              ),
-            );
-          }),
-    );
   }
 
   @override

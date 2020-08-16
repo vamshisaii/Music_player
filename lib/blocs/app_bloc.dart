@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 
-enum NavigationOptions { HOME, ARTISTS, ALBUMS, SONGS, PLAYLISTS }
+enum NavigationOptions { HOME, ARTISTS, SONGS, ALBUMS, PLAYLISTS }
 enum SearchBarState { COLLAPSED, EXPANDED }
 
 class AppBloc {

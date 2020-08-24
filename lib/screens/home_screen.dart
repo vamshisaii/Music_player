@@ -10,6 +10,7 @@ import 'package:music_player/blocs/player_bloc.dart';
 import 'package:music_player/container_clipper.dart';
 
 import 'package:music_player/screens/home.dart';
+import 'package:music_player/screens/playlists_screen.dart';
 import 'package:music_player/screens/songs_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -49,10 +50,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   void initState() {
-   
     super.initState();
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-
 
     _currentNavigationOpetion = NavigationOptions.HOME;
     _currentSearchBarState = SearchBarState.COLLAPSED;
@@ -496,6 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Opacity _buildMiniPlayer(SongInfo currentSongPlaying, PlayerBloc playerBloc) {
+    final size = MediaQuery.of(context).size;
     return Opacity(
       opacity: 1 - controller.value,
       child: controller.value < 1
@@ -513,10 +513,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             ),
                     ),
                     SizedBox(
-                      width: 25,
+                      width: size.width / 20,
                     ),
                     Container(
-                      width: 260,
+                      width: size.width / 1.65,
                       child: Text(currentSongPlaying.title),
                       // Text(currentSongPlaying.artist,style:TextStyle(color: Colors.black38,fontSize: 12))
                     ),
@@ -727,11 +727,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             },
             body: TabBarView(
               children: <Widget>[
-                Home(bloc: bloc),
-                Artist(bloc: bloc,isArtistScreen: true,),
-                SongsScreen(bloc:bloc),
-                Artist(bloc: bloc,isArtistScreen: false,),
-                Container(child: Center(child: Text("playlists"))),
+                Home(bloc: bloc),//homse screen
+                Artist(
+                  bloc: bloc,
+                  isArtistScreen: true,
+                ),//artist page
+                SongsScreen(bloc: bloc),//songs page
+                Artist(
+                  bloc: bloc,
+                  isArtistScreen: false,
+                ), //artist screen is used for album as well by setting bool isArtistScreen
+                PlaylistScreen()//playlists Screen
               ],
             ),
           ),

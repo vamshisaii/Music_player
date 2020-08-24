@@ -29,8 +29,9 @@ class GridViewBuilder<T> extends StatelessWidget {
 
   Widget _buildGrid(List<T> items, BuildContext context) {
     return GridView.builder(physics: BouncingScrollPhysics(),
+    
       gridDelegate:
-          SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
+          SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2,childAspectRatio: 200/240),
       itemCount: items.length,
       itemBuilder: (context, index) => itemBuilder(
         context,

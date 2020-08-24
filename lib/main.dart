@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_player/blocs/app_bloc.dart';
+import 'package:music_player/playlists/playlist_bloc.dart';
 import 'package:music_player/screens/home_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -12,12 +13,14 @@ class MusicPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<PlayerBloc>(
-        create: (context) => PlayerBloc(), child: MaterialApp(
-        title: 'Music player',
-        home: Provider<AppBloc>(
-          create: (context) => AppBloc(),
-          child: HomeScreen(),
+    return Provider<PlaylistBloc>(create: (context)=>PlaylistBloc(),
+          child: Provider<PlayerBloc>(
+          create: (context) => PlayerBloc(), child: MaterialApp(
+          title: 'Music player',
+          home: Provider<AppBloc>(
+            create: (context) => AppBloc(),
+            child: HomeScreen(),
+          ),
         ),
       ),
     );

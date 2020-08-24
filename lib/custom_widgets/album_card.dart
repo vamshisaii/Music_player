@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ Map<NavigationOptions, List<dynamic>> currentNavigation;
 
 class _AlbumCardState extends State<AlbumCard> {
   ContainerTransitionType _transitionType = ContainerTransitionType.fade;
+  bool cardTextPosition = true;
 
   @override
   void initState() {
@@ -37,9 +39,10 @@ class _AlbumCardState extends State<AlbumCard> {
     final appBloc = Provider.of<AppBloc>(context, listen: false);
 
     appBloc.currentNavigationOption.listen((event) {
-      if (event == NavigationOptions.SONGS) current = NavigationOptions.HOME;
-      
-      else current = event;
+      if (event == NavigationOptions.SONGS) {
+        current = NavigationOptions.HOME;
+      } else
+        current = event;
       print(current);
     });
 
@@ -48,9 +51,13 @@ class _AlbumCardState extends State<AlbumCard> {
         widget.artistData?.artistArtPath ?? null,
         appBloc.audioQuery.getSongsFromArtist(
             sortType: SongSortType.DISPLAY_NAME,
-            artist: widget.artistData?.name ?? ''),
+            artistId: widget.artistData?.id ?? ''),
         widget.artistData?.name ?? 'artist',
-        150.00
+        null
+      /*  widget.artistData != null//using albumdata instead of artistData on purpose as id was called on null in future id;
+            ? appBloc.audioQuery
+                .getArtwork(type: ResourceType.ARTIST, id: widget.artistData.id)
+            : null*/
       ],
       NavigationOptions.HOME: [
         widget.albumData?.albumArt ?? null,
@@ -58,17 +65,37 @@ class _AlbumCardState extends State<AlbumCard> {
             sortType: SongSortType.DISPLAY_NAME,
             albumId: widget.albumData?.id ?? ''),
         widget.albumData?.title ?? 'album',
-        200.00
+        null
+      /*  widget.albumData != null
+            ? appBloc.audioQuery
+                .getArtwork(type: ResourceType.ALBUM, id: widget.albumData.id)
+            : null*/
       ],
-      NavigationOptions.ALBUMS:[
+      NavigationOptions.ALBUMS: [
         widget.albumData?.albumArt ?? null,
         appBloc.audioQuery.getSongsFromAlbum(
             sortType: SongSortType.DISPLAY_NAME,
             albumId: widget.albumData?.id ?? ''),
         widget.albumData?.title ?? 'album',
-        200.00
+        null
+      /*  widget.artistData != null
+            ? appBloc.audioQuery
+                .getArtwork(type: ResourceType.ALBUM, id: widget.albumData.id)
+            : null*/
       ],
     };
+
+    if (current == NavigationOptions.ALBUMS) {
+      cardTextPosition = false;
+      setState(() {});
+    } else if (current == NavigationOptions.ARTISTS) {
+      cardTextPosition = false;
+      setState(() {});
+    } else {
+      cardTextPosition = true;
+      setState(() {});
+    }
+    print(widget.albumData.id);
 
     return _OpenContainerWrapper(
       transitionType: _transitionType,
@@ -85,7 +112,7 @@ class _AlbumCardState extends State<AlbumCard> {
       Map<NavigationOptions, List<dynamic>> currentNav,
       NavigationOptions curr) {
     return Container(
-      width: currentNav[curr][3],
+      width: 200,
       child: InkWell(
           onTap: openContainer,
           child: Padding(
@@ -102,18 +129,30 @@ class _AlbumCardState extends State<AlbumCard> {
                         borderRadius: BorderRadius.only(
                             topRight: Radius.circular(20),
                             topLeft: Radius.circular(20)),
-                        child: Image(
-                          image: (currentNav[curr][0] == null)
-                              ? AssetImage("assets/no_cover.png")
-                              : FileImage(
-                                  File(currentNav[curr][0]),
-                                ),
-                        ),
+                        child: currentNav[curr][0] == null
+                            ? FutureBuilder<Uint8List>(
+                                future: currentNav[curr][3],
+                                builder: (_, snapshot) {
+                                  print(snapshot.data);
+                                  if (snapshot.data == null)
+                                    return Image(
+                                        image:
+                                            AssetImage("assets/no_cover.png"));
+                                  return Image.memory(snapshot.data);
+                                },
+                              )
+                            : Image(
+                                image: (currentNav[curr][0] == null)
+                                    ? AssetImage("assets/no_cover.png")
+                                    : FileImage(
+                                        File(currentNav[curr][0]),
+                                      ),
+                              ),
                       ),
                     ),
                     Positioned(
                       bottom: 0,
-                      width: 177,
+                      width: cardTextPosition ? 177 : 202,
 
                       height: 40,
                       //without cliprect, the blur regoin will be expanded to full

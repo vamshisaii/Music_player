@@ -1,39 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/blocs/player_bloc.dart';
-import 'package:music_player/custom_widgets/song_moreInfo.dart';
+import 'package:music_player/models/songInfo_playlist.dart';
 import 'package:provider/provider.dart';
 
 import '../utility.dart';
 
-class SongListTile extends StatefulWidget {
-  SongListTile({Key key, @required this.songData, @required this.option})
+class SongListPlaylistTile extends StatefulWidget {
+  SongListPlaylistTile(
+      {Key key, @required this.songData, @required this.option})
       : super(key: key);
-  final SongInfo songData;
+  final SongInfoPlaylist songData;
   final NavigationOptions option;
 
   @override
-  _SongListTileState createState() => _SongListTileState();
+  _SongListPlaylistTileState createState() => _SongListPlaylistTileState();
 }
 
-class _SongListTileState extends State<SongListTile> {
-  void choiceAction(String choice) {
-    if(choice==Constants.addToPlaylist){
-      showDialog(context: context,builder:(BuildContext context)=>AddToPlaylistPop(song:widget.songData));
-    }
-    else print("To-Do");
-  }
-
+class _SongListPlaylistTileState extends State<SongListPlaylistTile> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-    final constants=Constants.choices;
 
     return InkWell(
       onTap: () {
-        playerBloc.playSong(widget.songData.filePath, widget.songData);
+        playerBloc.playSong(widget.songData.filePath);
 
         switch (widget.option) {
           case NavigationOptions.SONGS:
@@ -45,7 +37,8 @@ class _SongListTileState extends State<SongListTile> {
           case NavigationOptions.HOME:
             playerBloc.trackCurrentSongList();
             break;
-          case NavigationOptions.PLAYLISTS:playerBloc.trackCurrentSongList();
+          case NavigationOptions.PLAYLISTS:
+            playerBloc.trackCurrentSongList();
             break;
           case NavigationOptions.ARTISTS:
             break;
@@ -90,16 +83,6 @@ class _SongListTileState extends State<SongListTile> {
               SizedBox(
                 width: size.width / 15,
               ),
-              Icon(Icons.favorite),
-              PopupMenuButton<String>(
-                icon:Icon(Icons.more_vert,color: Colors.grey[600],),
-                  onSelected: choiceAction,
-                  itemBuilder: (BuildContext context) {
-                    return constants
-                        .map(
-                            (String e) => PopupMenuItem<String>(child: Text(e),value:e))
-                        .toList();
-                  })
             ],
           ),
         ),

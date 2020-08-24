@@ -5,6 +5,7 @@ class DetailsContentScreen extends StatelessWidget {
   final Widget bodyContent;
   final String appBarBackgroundImage;
   final String appBarTitle;
+  
 
   DetailsContentScreen(
       {@required this.bodyContent,
@@ -18,6 +19,7 @@ class DetailsContentScreen extends StatelessWidget {
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return <Widget>[
             SliverAppBar(
+              backgroundColor: Colors.blueGrey,
               expandedHeight: 200.0,
               floating: false,
               pinned: true,

@@ -93,7 +93,7 @@ class PlayerBloc {
     //delay added so that it doesn't throw playerBloc.next more than once.:)
   }
 
-  void playSong(String path, SongInfo song) {
+  void playSong(String path, [SongInfo song]) {
     if (assetsAudioPlayer.isPlaying.value) {
       assetsAudioPlayer.stop();
 

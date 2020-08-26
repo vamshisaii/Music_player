@@ -205,6 +205,7 @@ class _OpenContainerWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc=Provider.of<AppBloc>(context,listen:false);
     return OpenContainer<bool>(
       closedColor: Colors.transparent,
       openColor: Colors.transparent,
@@ -226,6 +227,7 @@ class _OpenContainerWrapper extends StatelessWidget {
                   itemBuilder: (context, song) => SongListTile(
                     songData: song,
                     option: NavigationOptions.HOME,
+                    bloc:bloc
                   ),
                 );
               }),

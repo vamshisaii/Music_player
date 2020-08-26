@@ -48,10 +48,10 @@ class PlaylistBloc {
 
     //playlist.songs.add(song);
     SongInfoPlaylist songForPlaylist = SongInfoPlaylist(song: song,fromJson: false);
+    Playlist list=await helper.songList(playlist);
 
-    await helper.updatePlaylist(Playlist(
-        playlistName: 'first playlist',
-        songs: [songForPlaylist, songForPlaylist]));
+    list.songs.add(songForPlaylist);
+    await helper.updatePlaylist(list);
     readFromDatabase();
     // await helper.songList(playlist);
   }

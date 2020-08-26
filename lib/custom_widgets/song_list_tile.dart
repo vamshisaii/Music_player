@@ -8,10 +8,11 @@ import 'package:provider/provider.dart';
 import '../utility.dart';
 
 class SongListTile extends StatefulWidget {
-  SongListTile({Key key, @required this.songData, @required this.option})
+  SongListTile({Key key, @required this.songData, @required this.option,@required this.bloc})
       : super(key: key);
   final SongInfo songData;
   final NavigationOptions option;
+  final AppBloc bloc;
 
   @override
   _SongListTileState createState() => _SongListTileState();
@@ -20,7 +21,7 @@ class SongListTile extends StatefulWidget {
 class _SongListTileState extends State<SongListTile> {
   void choiceAction(String choice) {
     if(choice==Constants.addToPlaylist){
-      showDialog(context: context,builder:(BuildContext context)=>AddToPlaylistPop(song:widget.songData));
+      showDialog(context: context,builder:(BuildContext context)=>AddToPlaylistPop(song:widget.songData,bloc:widget.bloc));
     }
     else print("To-Do");
   }

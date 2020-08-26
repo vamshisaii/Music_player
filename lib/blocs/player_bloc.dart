@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'dart:math';
 
+import 'package:music_player/models/songInfo_playlist.dart';
+
 class PlayerBloc {
   AssetsAudioPlayer assetsAudioPlayer = AssetsAudioPlayer();
   int index = 0;
@@ -93,7 +95,9 @@ class PlayerBloc {
     //delay added so that it doesn't throw playerBloc.next more than once.:)
   }
 
-  void playSong(String path, [SongInfo song]) {
+  
+
+  void playSong(String path, SongInfo song) {
     if (assetsAudioPlayer.isPlaying.value) {
       assetsAudioPlayer.stop();
 

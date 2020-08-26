@@ -12,12 +12,13 @@ import 'package:provider/provider.dart';
 
 class PlaylistTile extends StatelessWidget {
   const PlaylistTile(
-      {Key key, @required this.playlist, this.song, @required this.isPopup})
+      {Key key, @required this.playlist, this.song, @required this.isPopup,@required this.bloc})
       : super(key: key);
 
   final Playlist playlist;
   final SongInfo song;
   final bool isPopup;
+  final AppBloc bloc;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +41,7 @@ class PlaylistTile extends StatelessWidget {
                           return SongListPlaylistTile(
                             option: NavigationOptions.PLAYLISTS,
                             songData: songs,
+                            bloc:bloc
                           ); //TODO build song tile for playlist;
                         });
                   }),

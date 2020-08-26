@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
+import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/custom_widgets/playlist_tile.dart';
 import 'package:music_player/playlists/database_helper.dart';
 import 'package:music_player/playlists/playlist.dart';
@@ -18,9 +19,9 @@ class Constants {
 
 //add to playlist pop up screen
 class AddToPlaylistPop extends StatelessWidget {
-   AddToPlaylistPop({@required this.song});
+   AddToPlaylistPop({@required this.song,@required this.bloc});
   final SongInfo song;
- 
+  final AppBloc bloc;
   Widget build(BuildContext context) {
     DatabaseHelper helper = DatabaseHelper.instance;
     List<Widget> playlists = [
@@ -40,7 +41,7 @@ class AddToPlaylistPop extends StatelessWidget {
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 snapshot.data.forEach((Playlist element) {
-                  playlists.add(PlaylistTile(playlist: element, song: song,isPopup: true,));
+                  playlists.add(PlaylistTile(playlist: element, song: song,isPopup: true,bloc:bloc));
                 });
                 return Column(children: playlists);
               }

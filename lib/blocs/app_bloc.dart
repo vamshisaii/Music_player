@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_audio_query/flutter_audio_query.dart';
+import 'package:music_player/models/songInfo_playlist.dart';
 
 enum NavigationOptions { HOME, ARTISTS, SONGS, ALBUMS, PLAYLISTS }
 enum SearchBarState { COLLAPSED, EXPANDED }
@@ -171,6 +172,13 @@ class AppBloc {
 
    void changeSearchBarState(final SearchBarState newState) =>
       _searchBarController.sink.add(newState);
+
+
+      Future<SongInfo> playlistSongTosongInfo(SongInfoPlaylist playlistSong)async{
+        List<SongInfo> list= await  audioQuery.searchSongs(query: playlistSong.title);
+      return list[0];
+      
+  }
 
   void dispose() {
     _navigationController?.close();

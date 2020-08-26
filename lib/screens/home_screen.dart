@@ -737,7 +737,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   bloc: bloc,
                   isArtistScreen: false,
                 ), //artist screen is used for album as well by setting bool isArtistScreen
-                PlaylistScreen()//playlists Screen
+                PlaylistScreen(bloc:bloc)//playlists Screen
               ],
             ),
           ),

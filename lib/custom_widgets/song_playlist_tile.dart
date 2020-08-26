@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'package:music_player/blocs/app_bloc.dart';
 import 'package:music_player/blocs/player_bloc.dart';
 import 'package:music_player/models/songInfo_playlist.dart';
@@ -8,10 +9,11 @@ import '../utility.dart';
 
 class SongListPlaylistTile extends StatefulWidget {
   SongListPlaylistTile(
-      {Key key, @required this.songData, @required this.option})
+      {Key key, @required this.songData, @required this.option,@required this.bloc})
       : super(key: key);
   final SongInfoPlaylist songData;
   final NavigationOptions option;
+  final AppBloc bloc;
 
   @override
   _SongListPlaylistTileState createState() => _SongListPlaylistTileState();
@@ -24,8 +26,10 @@ class _SongListPlaylistTileState extends State<SongListPlaylistTile> {
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
 
     return InkWell(
-      onTap: () {
-        playerBloc.playSong(widget.songData.filePath);
+      onTap: ()async {
+       
+        SongInfo song= await widget.bloc.playlistSongTosongInfo(widget.songData);
+        playerBloc.playSong(song.filePath,song);
 
         switch (widget.option) {
           case NavigationOptions.SONGS:
@@ -76,13 +80,11 @@ class _SongListPlaylistTileState extends State<SongListPlaylistTile> {
                 ),
               ),
               SizedBox(
-                width: size.width / 30,
+                width: size.width / 10,
               ),
               Text(
                   '${Utility.parseToMinutesSeconds(int.parse(widget.songData.duration))}'),
-              SizedBox(
-                width: size.width / 15,
-              ),
+             
             ],
           ),
         ),

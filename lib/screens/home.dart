@@ -55,7 +55,7 @@ class Home extends StatelessWidget {
             playerBloc.songs = snapshot.data;
             return VerticalListItemBuilder<SongInfo>(
               snapshot: snapshot,
-              itemBuilder: (context, song) => SongListTile(
+              itemBuilder: (context, song) => SongListTile(bloc:bloc,
                 songData: song,
                 option: NavigationOptions.HOME,
               ),

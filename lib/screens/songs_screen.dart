@@ -22,12 +22,11 @@ class SongsScreen extends StatelessWidget {
           stream: bloc.songStream,
           builder: (context, snapshot) {
             final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-            playerBloc.songs = snapshot.data;
+            playerBloc.updateCurrentSongsList(snapshot.data);
             return VerticalListItemBuilder<SongInfo>(
               snapshot: snapshot,
               itemBuilder: (context, song) => SongListTile(bloc:bloc,
                 songData: song,
-                option: NavigationOptions.SONGS,
               ),
             );
           })

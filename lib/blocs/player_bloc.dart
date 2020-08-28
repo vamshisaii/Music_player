@@ -4,20 +4,34 @@ import 'dart:async';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'dart:math';
 
-import 'package:music_player/models/songInfo_playlist.dart';
-
 class PlayerBloc {
   AssetsAudioPlayer assetsAudioPlayer = AssetsAudioPlayer();
   int index = 0;
-  List<SongInfo> songs;
-  SongInfo currentSong;
+  List<SongInfo>
+      songs; //this list is used to track and operate player properties.
+  SongInfo currentSong; //tracking current song.
+  List<SongInfo>
+      queueList; //this list is added to songs list at specific index for queueing up new songs
 
   final StreamController<SongInfo> _currentSong =
       StreamController<SongInfo>.broadcast();
 
+  PlayerBloc() {
+    currentList.listen((event) {
+      songs = event;
+    });
+    queueStream.listen((event) {
+      print("queue list $event");
+    });
+  }
+
   final StreamController<bool> _loop = StreamController<bool>.broadcast();
   final StreamController<bool> _playerOpen = StreamController<bool>.broadcast();
   final StreamController<bool> _shuffle = StreamController<bool>.broadcast();
+  final StreamController<List<SongInfo>> _currentSongList =
+      StreamController<List<SongInfo>>.broadcast();
+  final StreamController<List<SongInfo>> _currentQueueList =
+      StreamController<List<SongInfo>>.broadcast();
 
   Stream<bool> get isPlaying => assetsAudioPlayer.isPlaying;
 
@@ -26,8 +40,9 @@ class PlayerBloc {
   Stream<Playing> get currentSongInfo2 => assetsAudioPlayer.current;
 
   Stream<bool> get isPlayerOpen => _playerOpen.stream;
-
+  Stream<List<SongInfo>> get currentList => _currentSongList.stream;
   Stream<SongInfo> get currentSongPlaying => _currentSong.stream;
+  Stream<List<SongInfo>> get queueStream => _currentQueueList.stream;
 
   Stream<bool> get isShuffle => _shuffle.stream;
 
@@ -95,8 +110,6 @@ class PlayerBloc {
     //delay added so that it doesn't throw playerBloc.next more than once.:)
   }
 
-  
-
   void playSong(String path, SongInfo song) {
     if (assetsAudioPlayer.isPlaying.value) {
       assetsAudioPlayer.stop();
@@ -134,8 +147,17 @@ class PlayerBloc {
     assetsAudioPlayer.seek(duration);
   }
 
+  void updateCurrentSongsList(List<SongInfo> songs) {
+    _currentSongList.add(songs);
+  }
+
+  void updateQueueList(List<SongInfo> songs) {
+    _currentQueueList.add(songs);
+  }
+
   void trackCurrentSongList() {
     List<String> songsPath = songs.map((e) => e.filePath).toList();
+    songs.forEach((element) {});
     currentSongPlaying.listen((event) {
       index = songsPath
           .indexWhere((element) => element.startsWith('${event.filePath}'));
@@ -177,6 +199,8 @@ class PlayerBloc {
     _currentSong.close();
     _shuffle.close();
     _loop.close();
+    _currentSongList.close();
+    _currentQueueList.close();
   }
 }
 

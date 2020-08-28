@@ -10,7 +10,6 @@ class AppBloc {
   AppBloc() {
     _navigationController.stream.listen(onDataNavigationChangeCallback);
     _navigationController.sink.add(NavigationOptions.HOME);
-
   }
 
   final FlutterAudioQuery audioQuery = FlutterAudioQuery();
@@ -24,7 +23,7 @@ class AppBloc {
   final StreamController<List<ArtistInfo>> _artistController =
       StreamController.broadcast();
 
-   ArtistSortType _artistSortTypeSelected = ArtistSortType.DEFAULT;
+  ArtistSortType _artistSortTypeSelected = ArtistSortType.DEFAULT;
 //navigation stream controller
 
   final StreamController<NavigationOptions> _navigationController =
@@ -55,7 +54,7 @@ class AppBloc {
 
   Stream<SearchBarState> get searchBarStream => _searchBarController.stream;
 
-   void loadPlaylistData() {
+  void loadPlaylistData() {
     audioQuery.getPlaylists().then((playlist) {
       _playlistController.sink.add(playlist);
     }).catchError((error) {
@@ -83,14 +82,12 @@ class AppBloc {
     if (query == null)
       audioQuery
           .getPlaylists(sortType: _playlistSortTypeSelected)
-          .then(
-              (playlistData) => _playlistController.sink.add(playlistData))
+          .then((playlistData) => _playlistController.sink.add(playlistData))
           .catchError((error) => _playlistController.sink.addError(error));
     else
       audioQuery
           .searchPlaylists(query: query)
-          .then(
-              (playlistData) => _playlistController.sink.add(playlistData))
+          .then((playlistData) => _playlistController.sink.add(playlistData))
           .catchError((error) => _playlistController.sink.addError(error));
   }
 
@@ -107,10 +104,13 @@ class AppBloc {
           .catchError((error) => _albumController.sink.addError(error));
   }
 
-  void _fetchSongData({String query,NavigationOptions option}) {
+  void _fetchSongData({String query, NavigationOptions option}) {
     if (query == null)
       audioQuery
-          .getSongs(sortType: option==NavigationOptions.HOME? SongSortType.RECENT_YEAR :_songSortTypeSelected)
+          .getSongs(
+              sortType: option == NavigationOptions.HOME
+                  ? SongSortType.RECENT_YEAR
+                  : _songSortTypeSelected)
           .then((songList) => _songController.sink.add(songList))
           .catchError((error) => _songController.sink.addError(error));
     else
@@ -165,19 +165,31 @@ class AppBloc {
 
       case NavigationOptions.HOME:
         _fetchAlbumData(query: query);
-        _fetchPlaylistData(query:query);
+        _fetchPlaylistData(query: query);
         break;
     }
   }
 
-   void changeSearchBarState(final SearchBarState newState) =>
+  void changeSearchBarState(final SearchBarState newState) =>
       _searchBarController.sink.add(newState);
 
+  Future<SongInfo> playlistSongTosongInfo(SongInfoPlaylist playlistSong) async {
+    List<SongInfo> list =
+        await audioQuery.searchSongs(query: playlistSong.title);
+    return list[0];
+  }
 
-      Future<SongInfo> playlistSongTosongInfo(SongInfoPlaylist playlistSong)async{
-        List<SongInfo> list= await  audioQuery.searchSongs(query: playlistSong.title);
-      return list[0];
-      
+  Future<List<SongInfo>> playlistSongsListTrackUpdatetoSongInfo(
+      List<SongInfoPlaylist> list)async {
+    List<SongInfo> songs=[];
+    list.forEach((songPlaylist)async {
+      List<SongInfo> songquery=await audioQuery.searchSongs(query: songPlaylist.title);
+      songs.add(songquery[0]);
+      songs.forEach((element) {print(element.title);});
+
+    });
+    return songs;
+
   }
 
   void dispose() {
@@ -185,7 +197,7 @@ class AppBloc {
     _artistController?.close();
     _albumController?.close();
     _songController?.close();
-    
+
     _playlistController?.close();
     _searchBarController?.close();
   }

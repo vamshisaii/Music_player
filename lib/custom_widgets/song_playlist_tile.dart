@@ -9,10 +9,9 @@ import '../utility.dart';
 
 class SongListPlaylistTile extends StatefulWidget {
   SongListPlaylistTile(
-      {Key key, @required this.songData, @required this.option,@required this.bloc})
+      {Key key, @required this.songData,@required this.bloc})
       : super(key: key);
   final SongInfoPlaylist songData;
-  final NavigationOptions option;
   final AppBloc bloc;
 
   @override
@@ -30,23 +29,9 @@ class _SongListPlaylistTileState extends State<SongListPlaylistTile> {
        
         SongInfo song= await widget.bloc.playlistSongTosongInfo(widget.songData);
         playerBloc.playSong(song.filePath,song);
+        playerBloc.trackCurrentSongList();
 
-        switch (widget.option) {
-          case NavigationOptions.SONGS:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.ALBUMS:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.HOME:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.PLAYLISTS:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.ARTISTS:
-            break;
-        }
+       
       },
       child: Container(
         height: 70,

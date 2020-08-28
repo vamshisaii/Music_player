@@ -9,38 +9,39 @@ import 'package:music_player/custom_widgets/vertical_list_item_widget.dart';
 import 'package:provider/provider.dart';
 
 class Home extends StatelessWidget {
-  const Home({Key key,@required this.bloc}) : super(key: key);
+  const Home({Key key, @required this.bloc}) : super(key: key);
   final AppBloc bloc;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-                    child: Column(
-                  children: <Widget>[
-                    _buildHorizontalAlbums(bloc),
-                    Row(
-                      children: <Widget>[
-                        SizedBox(width: 30),
-                        Text(
-                          'R E C E N T',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                    _buildVerticalRecentSongs(bloc),
-                  ],
-                ));
+        child: Column(
+      children: <Widget>[
+        _buildHorizontalAlbums(bloc),
+        Row(
+          children: <Widget>[
+            SizedBox(width: 30),
+            Text(
+              'R E C E N T',
+              style:
+                  TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+            ),
+          ],
+        ),
+        _buildVerticalRecentSongs(bloc),
+      ],
+    ));
   }
 
-   Widget _buildHorizontalAlbums(AppBloc bloc) {
+  Widget _buildHorizontalAlbums(AppBloc bloc) {
     return StreamBuilder<List<AlbumInfo>>(
       stream: bloc.albumStream,
       builder: (context, snapshot) {
         return HorizontalListItemsBuilder<AlbumInfo>(
           snapshot: snapshot,
-          itemBuilder: (context, album) => AlbumCard(albumData: album,),
+          itemBuilder: (context, album) => AlbumCard(
+            albumData: album,
+          ),
         );
       },
     );
@@ -52,12 +53,12 @@ class Home extends StatelessWidget {
           stream: bloc.songStream,
           builder: (context, snapshot) {
             final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-            playerBloc.songs = snapshot.data;
+            playerBloc.updateCurrentSongsList(snapshot.data);
             return VerticalListItemBuilder<SongInfo>(
               snapshot: snapshot,
-              itemBuilder: (context, song) => SongListTile(bloc:bloc,
+              itemBuilder: (context, song) => SongListTile(
+                bloc: bloc,
                 songData: song,
-                option: NavigationOptions.HOME,
               ),
             );
           }),

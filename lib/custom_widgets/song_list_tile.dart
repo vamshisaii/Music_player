@@ -8,10 +8,9 @@ import 'package:provider/provider.dart';
 import '../utility.dart';
 
 class SongListTile extends StatefulWidget {
-  SongListTile({Key key, @required this.songData, @required this.option,@required this.bloc})
+  SongListTile({Key key, @required this.songData, @required this.bloc})
       : super(key: key);
   final SongInfo songData;
-  final NavigationOptions option;
   final AppBloc bloc;
 
   @override
@@ -19,38 +18,47 @@ class SongListTile extends StatefulWidget {
 }
 
 class _SongListTileState extends State<SongListTile> {
-  void choiceAction(String choice) {
-    if(choice==Constants.addToPlaylist){
-      showDialog(context: context,builder:(BuildContext context)=>AddToPlaylistPop(song:widget.songData,bloc:widget.bloc));
+  void choiceAction(String choice, PlayerBloc playerBloc) async {
+    if (choice == Constants.addToPlaylist) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) =>
+              AddToPlaylistPop(song: widget.songData, bloc: widget.bloc));
+    } 
+    
+    else if (choice == Constants.addToQueue) {
+      final list = playerBloc.songs;
+      final index = playerBloc.index;
+      var queueList=playerBloc.queueList;
+      print('waiting for queulist');
+      if (queueList == null) {
+        queueList=[widget.songData];
+        playerBloc.updateQueueList(queueList);
+
+      }
+
+      queueList.add(widget.songData);
+      playerBloc.updateQueueList(queueList);
+
+      list.insertAll(index + 1, queueList);
+      print(list);
+      playerBloc.updateCurrentSongsList(list);
     }
-    else print("To-Do");
+    
+     else
+      print("To-Do");
   }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final playerBloc = Provider.of<PlayerBloc>(context, listen: false);
-    final constants=Constants.choices;
+    final constants = Constants.choices;
 
     return InkWell(
       onTap: () {
         playerBloc.playSong(widget.songData.filePath, widget.songData);
-
-        switch (widget.option) {
-          case NavigationOptions.SONGS:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.ALBUMS:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.HOME:
-            playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.PLAYLISTS:playerBloc.trackCurrentSongList();
-            break;
-          case NavigationOptions.ARTISTS:
-            break;
-        }
+        playerBloc.trackCurrentSongList();
       },
       child: Container(
         height: 70,
@@ -93,12 +101,15 @@ class _SongListTileState extends State<SongListTile> {
               ),
               Icon(Icons.favorite),
               PopupMenuButton<String>(
-                icon:Icon(Icons.more_vert,color: Colors.grey[600],),
-                  onSelected: choiceAction,
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: Colors.grey[600],
+                  ),
+                  onSelected: (choice) => choiceAction(choice, playerBloc),
                   itemBuilder: (BuildContext context) {
                     return constants
-                        .map(
-                            (String e) => PopupMenuItem<String>(child: Text(e),value:e))
+                        .map((String e) =>
+                            PopupMenuItem<String>(child: Text(e), value: e))
                         .toList();
                   })
             ],

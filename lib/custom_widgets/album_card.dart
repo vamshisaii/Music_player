@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_audio_query/flutter_audio_query.dart';
 import 'package:animations/animations.dart';
 import 'package:music_player/blocs/app_bloc.dart';
+import 'package:music_player/blocs/player_bloc.dart';
 import 'package:music_player/custom_widgets/song_list_tile.dart';
 import 'package:music_player/custom_widgets/vertical_list_item_widget.dart';
 import 'package:music_player/screens/detailsContentScreen.dart';
@@ -54,7 +55,7 @@ class _AlbumCardState extends State<AlbumCard> {
             artistId: widget.artistData?.id ?? ''),
         widget.artistData?.name ?? 'artist',
         null
-      /*  widget.artistData != null//using albumdata instead of artistData on purpose as id was called on null in future id;
+        /*  widget.artistData != null//using albumdata instead of artistData on purpose as id was called on null in future id;
             ? appBloc.audioQuery
                 .getArtwork(type: ResourceType.ARTIST, id: widget.artistData.id)
             : null*/
@@ -66,7 +67,7 @@ class _AlbumCardState extends State<AlbumCard> {
             albumId: widget.albumData?.id ?? ''),
         widget.albumData?.title ?? 'album',
         null
-      /*  widget.albumData != null
+        /*  widget.albumData != null
             ? appBloc.audioQuery
                 .getArtwork(type: ResourceType.ALBUM, id: widget.albumData.id)
             : null*/
@@ -78,7 +79,7 @@ class _AlbumCardState extends State<AlbumCard> {
             albumId: widget.albumData?.id ?? ''),
         widget.albumData?.title ?? 'album',
         null
-      /*  widget.artistData != null
+        /*  widget.artistData != null
             ? appBloc.audioQuery
                 .getArtwork(type: ResourceType.ALBUM, id: widget.albumData.id)
             : null*/
@@ -205,7 +206,7 @@ class _OpenContainerWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc=Provider.of<AppBloc>(context,listen:false);
+    final bloc = Provider.of<AppBloc>(context, listen: false);
     return OpenContainer<bool>(
       closedColor: Colors.transparent,
       openColor: Colors.transparent,
@@ -220,15 +221,18 @@ class _OpenContainerWrapper extends StatelessWidget {
           bodyContent: FutureBuilder<List<SongInfo>>(
               future: audioquery,
               builder: (context, snapshot) {
+                final playerBloc =
+                    Provider.of<PlayerBloc>(context, listen: false);
                 if (!snapshot.hasData) return CircularProgressIndicator();
+                if (snapshot.hasData) {
+                  playerBloc.updateCurrentSongsList(snapshot.data);
+                  print('added to stream');
+                }
 
                 return VerticalListItemBuilder<SongInfo>(
                   snapshot: snapshot,
-                  itemBuilder: (context, song) => SongListTile(
-                    songData: song,
-                    option: NavigationOptions.HOME,
-                    bloc:bloc
-                  ),
+                  itemBuilder: (context, song) =>
+                      SongListTile(songData: song, bloc: bloc),
                 );
               }),
         );
